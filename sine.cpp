@@ -65,14 +65,13 @@ struct Fraction{
     b  = B,
   };
   enum { _gcd = GCD<a, b>::value };
-
   struct Reduced{
     typedef typename ::Fraction < a / _gcd, b / _gcd > type;
   };
 
   template <typename F>
   struct Add {
-    typedef typename ::Fraction< a * F::b + b * F::a , b * F::b >::Reduced::type type;
+    typedef typename ::Fraction< a  * F::b + b * F::a , b * F::b >::Reduced::type type;
   };
   template <typename F>
   struct Sub {
@@ -120,35 +119,59 @@ struct Fac<0>{
 };
 
 
-
-
-template <typename Frac> 
-struct Sine{
-  template <int N>
-    struct Sign{
-     enum {
-      value = N % 2 == 0 ? 0 :
-        N % 4 == 1 ? 1 :
-         -1
-    };
-  };
+template <typename Range, typename Function, typename Frac>
+struct Tailor{
   struct Func{
     template <typename Acc, typename ItemNumber>
      struct apply{
         typedef typename Acc::template Add< 
            typename Frac::template Power<ItemNumber::value>::type::
                  template DivNumber< Fac< ItemNumber::value > >::type::
-                 template MulNumber< Sign< ItemNumber::value > >::type
+                 template MulNumber< typename Function::template Deriviate0<ItemNumber::value> >::type
         >::type type;
      };
   };
-  typedef typename Sigma< Range<1, 11, 2>, Func, ::Fraction<0, 1> >::type type;
+  typedef typename Sigma<Range, Func, ::Fraction<0, 1> >::type type;
 };
 
 
+template <typename Frac> 
+struct Sine{
+  struct Sine0{
+   template <int N>
+    struct Deriviate0{
+     enum {
+      value = N % 2 == 0 ? 0 :
+        N % 4 == 1 ? 1 :
+         -1
+     };
+   };
+  };
+  typedef typename Tailor< Range<1, 11, 2>, Sine0, Frac >::type type;
+};
+
+template <typename Frac> 
+struct Cosine{
+  struct Cosine0{
+   template <int N>
+    struct Deriviate0{
+     enum {
+      value = N % 2 == 1 ? 0 :
+        N % 4 == 0 ? 1 :
+         -1
+     };
+   };
+  };
+  typedef typename Tailor< Range<1, 9, 2>, Cosine0, Frac >::type type;
+};
+
+template <typename Frac> 
+struct Tangent{
+ typedef typename Sine<Frac>::type::template Div<typename Cosine<Frac>::type>::type type;
+};
 
 #include <cstdio>
 int main(){
-  typedef Sine< Fraction<1, 1> >  ::type type;
+  typedef Cosine< Fraction<1, 1> >  ::type type;
   printf("%d %d\n", type::a, type::b);
 }
